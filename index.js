@@ -1,66 +1,48 @@
-// TsukiBot V2 — O robô de Tsukishima
-// Autor: Tsuki 🌙
-// Versão: 2.0 — simples, poético e leve
-
 import express from "express";
-import makeWASocket, { useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
+import { makeWASocket, useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
 import qrcode from "qrcode-terminal";
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000;
 
+// Inicializa o servidor web (para manter o Render ativo)
 app.get("/", (req, res) => {
-  res.send("🌙 TsukiBot V2 está vivo no Render — O guardião de Tsukishima desperto!");
+  res.send("🌙 TsukiBotV2 está vivo e dançando sob a lua!");
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Servidor ativo em http://localhost:${port}`);
+  console.log(`🚀 Servidor ativo na porta ${port}`);
 });
 
 // Função principal do bot
 async function startBot() {
-  const { state, saveCreds } = await useMultiFileAuthState("auth_info");
+  const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
+
   const sock = makeWASocket({
     printQRInTerminal: true,
     auth: state,
+    browser: ["TsukiBotV2", "Chrome", "1.0.0"],
   });
-
-  sock.ev.on("creds.update", saveCreds);
 
   sock.ev.on("connection.update", (update) => {
     const { connection, lastDisconnect, qr } = update;
 
-    if (qr) qrcode.generate(qr, { small: true });
+    if (qr) {
+      console.log("📱 Escaneie este QR Code para conectar:");
+      qrcode.generate(qr, { small: true });
+    }
 
-    if (connection === "open") {
-      console.log("✅ TsukiBot V2 conectado ao WhatsApp!");
-    } else if (connection === "close") {
-      const reason = lastDisconnect?.error?.output?.statusCode;
-      console.log("⚠️ Conexão encerrada:", reason);
-      if (reason !== DisconnectReason.loggedOut) startBot();
-      else console.log("🚫 Sessão encerrada. Escaneie o QR novamente.");
+    if (connection === "close") {
+      const shouldReconnect =
+        lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+      console.log("❌ Conexão encerrada, tentando reconectar:", shouldReconnect);
+      if (shouldReconnect) startBot();
+    } else if (connection === "open") {
+      console.log("✅ TsukiBotV2 conectado ao WhatsApp!");
     }
   });
 
-  // Resposta automática simples
-  sock.ev.on("messages.upsert", async (msg) => {
-    try {
-      const message = msg.messages[0];
-      if (!message.message || message.key.fromMe) return;
-
-      const from = message.key.remoteJid;
-      const text = message.message.conversation?.toLowerCase() || "";
-
-      if (text.includes("tsuki")) {
-        await sock.sendMessage(from, { text: "🌙 Chamou o Tsuki? Estou aqui, sempre à sombra do luar." });
-      } else if (text.includes("oi")) {
-        await sock.sendMessage(from, { text: "✨ Olá, viajante. O luar te trouxe até mim?" });
-      }
-    } catch (err) {
-      console.error("Erro ao processar mensagem:", err);
-    }
-  });
+  sock.ev.on("creds.update", saveCreds);
 }
 
-// Iniciar o bot
 startBot();
