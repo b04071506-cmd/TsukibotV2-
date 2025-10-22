@@ -1,8 +1,9 @@
 {
   "name": "tsukibotv2",
-  "version": "1.0.0",
-  "description": "O robô de Tsukishima",
+  "version": "2.0.0",
+  "description": "O robô poético de Tsukishima 🌙",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
